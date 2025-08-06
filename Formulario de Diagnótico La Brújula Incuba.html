@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta de Diagnóstico y Plan de Acción para Emprendimientos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .question-card {
+            transition: all 0.3s ease-in-out;
+        }
+        .question-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .option-label {
+            display: block;
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .option-label:hover {
+            background-color: #f9fafb;
+            border-color: #6366f1;
+        }
+        input[type="radio"]:checked + .option-label {
+            background-color: #eef2ff;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px #c7d2fe;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #results-section, #results-section * {
+                visibility: visible;
+            }
+            #results-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div id="app" class="container mx-auto p-4 sm:p-6 md:p-8 max-w-4xl">
+        
+        <!-- Welcome Section -->
+        <div id="welcome-section" class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Herramienta de Diagnóstico para Emprendimientos</h1>
+            <p class="text-lg text-gray-600">Evalúa la salud de tu negocio y obtén un plan de acción personalizado.</p>
+        </div>
+
+        <!-- Form Section -->
+        <form id="diagnostic-form">
+            <!-- Contact Info Section -->
+            <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8">
+                 <h2 class="text-xl font-bold mb-6 text-indigo-700">1. Datos del Proyecto</h2>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="projectName" class="block text-sm font-medium text-gray-700 mb-1">Nombre del Proyecto</label>
+                        <input type="text" id="projectName" name="projectName" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label for="entrepreneurName" class="block text-sm font-medium text-gray-700 mb-1">Tu Nombre</label>
+                        <input type="text" id="entrepreneurName" name="entrepreneurName" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </div>
+                     <div class="md:col-span-2">
+                        <label for="entrepreneurEmail" class="block text-sm font-medium text-gray-700 mb-1">Tu Correo Electrónico</label>
+                        <input type="email" id="entrepreneurEmail" name="entrepreneurEmail" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </div>
+                 </div>
+            </div>
+
+            <div id="questions-container" class="space-y-8">
+                <!-- Questions will be injected here by JavaScript -->
+            </div>
+
+            <div class="mt-12 text-center">
+                <button type="submit" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition duration-300 transform hover:scale-105">
+                    Generar Diagnóstico y Plan de Acción
+                </button>
+            </div>
+        </form>
+
+        <!-- Results Section -->
+        <div id="results-section" class="hidden mt-12">
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+                <h2 class="text-3xl font-bold text-center mb-2">Tu Diagnóstico</h2>
+                <div id="results-contact-info" class="text-center text-gray-600 mb-6"></div>
+                <div id="overall-diagnosis" class="text-center mb-8 p-4 rounded-lg"></div>
+                
+                <!-- Action Buttons -->
+                <div class="border-t border-b border-gray-200 py-6 my-8 no-print">
+                    <h3 class="text-lg font-semibold text-center text-gray-800 mb-4">Acciones</h3>
+                    <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                        <button id="print-button" class="w-full sm:w-auto bg-gray-700 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-800 transition duration-300">Imprimir / Guardar PDF</button>
+                        <button id="restart-button" class="w-full sm:w-auto bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition duration-300">Hacer un nuevo diagnóstico</button>
+                    </div>
+                    
+                    <!-- Email Section -->
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                         <h3 class="text-lg font-semibold text-center text-gray-800 mb-2">Enviar a mi Asesor</h3>
+                         <p class="text-center text-sm text-gray-500 mb-4">Selecciona tu asesor para enviarle una copia de tu diagnóstico por correo.</p>
+                         <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                             <select id="advisor-select" class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                 <option value="" disabled selected>Selecciona un ejecutivo...</option>
+                                 <option value="lgodoy@labrujulaincuba.cl">Luis Godoy</option>
+                                 <option value="mbarraza@labrujulaincuba.cl">María José Barraza</option>
+                                 <option value="vcortes@labrujulaincuba.cl">Valentina Cortés</option>
+                             </select>
+                             <button id="email-button" class="w-full sm:w-auto bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700 transition duration-300">Enviar por Correo</button>
+                         </div>
+                    </div>
+                </div>
+
+                <h3 class="text-2xl font-bold mb-6 border-b pb-2">Resumen de Puntuación por Área</h3>
+                <div id="score-summary" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"></div>
+
+                <h3 class="text-2xl font-bold mb-6 mt-10 border-b pb-2">Plan de Acción Personalizado</h3>
+                <div id="action-plan" class="space-y-6"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const questions = [
+            {
+                area: "Propuesta de Valor y Producto/Servicio",
+                items: [
+                    {
+                        q: "¿Qué tan bien definido está el problema que resuelves?",
+                        options: [
+                            { text: "Es una idea interesante, pero no estoy seguro de qué problema real soluciona o para quién.", score: 1 },
+                            { text: "Ofrecemos un producto que es un 'lujo' o 'gusto', algo que los clientes quieren pero no necesitan con urgencia.", score: 2 },
+                            { text: "Resolvemos un problema claro, urgente y valioso para un segmento de clientes bien definido.", score: 3 }
+                        ]
+                    },
+                    {
+                        q: "¿Cuál es tu principal diferenciador frente a la competencia?",
+                        options: [
+                            { text: "Hacemos casi lo mismo que los demás; competimos principalmente por precio.", score: 1 },
+                            { text: "Tenemos algunas mejoras o características únicas, pero podrían ser copiadas fácilmente.", score: 2 },
+                            { text: "Poseemos una ventaja competitiva sostenible (tecnología propia, patente, marca fuerte, efecto de red).", score: 3 }
+                        ]
+                    }
+                ]
+            },
+            {
+                area: "Solución y Validación",
+                items: [
+                    {
+                        q: "¿Qué tan definidas están las características de tu solución (producto/servicio)?",
+                        options: [
+                            { text: "Es una idea general; aún no hemos detallado las características específicas.", score: 1 },
+                            { text: "Hemos listado las características principales, pero sin entrar en detalles técnicos o de funcionamiento.", score: 2 },
+                            { text: "Tenemos una lista detallada de características, funcionalidades y cómo interactuarán entre sí.", score: 3 }
+                        ]
+                    },
+                    {
+                        q: "¿Has validado las características de tu solución con clientes potenciales?",
+                        options: [
+                            { text: "No, las características se basan en lo que nosotros creemos que los clientes necesitan.", score: 1 },
+                            { text: "Hemos comentado las características con potenciales clientes, pero sin mostrarles un prototipo o demo.", score: 2 },
+                            { text: "Hemos mostrado un prototipo, maqueta o demo a clientes y hemos ajustado las características según su feedback directo.", score: 3 }
+                        ]
+                    },
+                    {
+                        q: "¿Has validado que los clientes están dispuestos a pagar por tu solución?",
+                        options: [
+                            { text: "No hemos hablado de precios con los clientes; asumimos que pagarán si les gusta el producto.", score: 1 },
+                            { text: "Los clientes han dicho que 'estarían dispuestos a pagar', pero no hay un compromiso real (un pago o un contrato).", score: 2 },
+                            { text: "Tenemos evidencia real de viabilidad: pre-ventas, pilotos pagados, o cartas de intención firmadas.", score: 3 }
+                        ]
+                    }
+                ]
+            },
+            {
+                area: "Mercado y Cliente",
+                items: [
+                    {
+                        q: "¿Qué tan profundo es tu conocimiento del cliente objetivo?",
+                        options: [
+                            { text: "Creemos que nuestro producto es 'para todo el mundo'. No tenemos un perfil de cliente específico.", score: 1 },
+                            { text: "Tenemos una idea general de quién es nuestro cliente (ej: 'jóvenes de 20 a 30 años').", score: 2 },
+                            { text: "Tenemos un perfil detallado de nuestro 'cliente ideal', creado a partir de entrevistas, encuestas y datos reales.", score: 3 }
+                        ]
+                    }
+                ]
+            },
+            {
+                area: "Modelo de Negocio y Operaciones",
+                items: [
+                     {
+                        q: "¿Qué tan claro y validado está tu modelo para generar ingresos?",
+                        options: [
+                            { text: "No estamos seguros de cómo vamos a ganar dinero. Quizás con publicidad en el futuro.", score: 1 },
+                            { text: "Tenemos una idea clara de nuestra principal fuente de ingresos, pero aún no hay ventas reales que la validen.", score: 2 },
+                            { text: "Tenemos un modelo de ingresos probado (ventas recurrentes, transacciones, etc.) y entendemos nuestras métricas.", score: 3 }
+                        ]
+                    },
+                    {
+                        q: "¿Qué tan eficientes y escalables son tus operaciones?",
+                        options: [
+                            { text: "Aún no hemos diseñado cómo va a operar el proyecto; es una idea sin procesos definidos.", score: 1 },
+                            { text: "Todo es manual y depende 100% de mí. Si tuviéramos 10 clientes más, el sistema colapsaría.", score: 2 },
+                            { text: "Hemos empezado a estandarizar algunos procesos, pero todavía hay muchos cuellos de botella.", score: 3 },
+                            { text: "Tenemos procesos claros y herramientas que nos permiten crecer sin un aumento proporcional en los costos.", score: 4 }
+                        ]
+                    }
+                ]
+            },
+            {
+                area: "Finanzas y Financiamiento",
+                items: [
+                    {
+                        q: "¿Qué tan bien conoces los costos de tu proyecto?",
+                        options: [
+                            { text: "No tenemos una idea clara de los costos; es solo una estimación general.", score: 1 },
+                            { text: "Hemos listado los principales costos (ej: sueldos, marketing), pero sin un presupuesto detallado.", score: 2 },
+                            { text: "Tenemos un presupuesto detallado que incluye costos de desarrollo, operativos y de lanzamiento.", score: 3 }
+                        ]
+                    },
+                    {
+                        q: "¿Cuál es tu plan para financiar el proyecto?",
+                        options: [
+                            { text: "Dependemos 100% de ganar un fondo (público o privado) y no tenemos un plan B si no lo conseguimos.", score: 1 },
+                            { text: "Usaremos principalmente recursos propios, pero nuestro avance será lento. O, buscamos fondos y tenemos un plan reducido si no los ganamos.", score: 2 },
+                            { text: "Tenemos una estrategia clara: combinamos capital propio comprometido con un plan para buscar fondos externos, y tenemos un plan de contingencia.", score: 3 }
+                        ]
+                    },
+                    {
+                        q: "¿Cómo planeas medir el crecimiento de tu empresa?",
+                        options: [
+                            { text: "No hemos definido cómo mediremos el éxito o el crecimiento.", score: 1 },
+                            { text: "Nos basaremos en métricas de vanidad (ej: 'likes', seguidores) o en los ingresos totales, sin mayor análisis.", score: 2 },
+                            { text: "Hemos definido Indicadores Clave de Desempeño (KPIs) claros, como número de clientes, ingresos recurrentes o tasa de retención.", score: 3 }
+                        ]
+                    }
+                ]
+            },
+            {
+                area: "Equipo Fundador",
+                items: [
+                    {
+                        q: "¿El equipo tiene las habilidades y la dedicación necesarias?",
+                        options: [
+                            { text: "Soy solo yo, o los co-fundadores tienen habilidades muy similares, dejando brechas críticas.", score: 1 },
+                            { text: "El equipo tiene habilidades complementarias, pero algunos miembros están a tiempo parcial.", score: 2 },
+                            { text: "Somos un equipo dedicado a tiempo completo, con habilidades complementarias que cubren las áreas clave.", score: 3 }
+                        ]
+                    }
+                ]
+            },
+            {
+                area: "Marketing y Ventas",
+                items: [
+                    {
+                        q: "¿Cuentas con material de marketing y ventas para presentar tu proyecto?",
+                        options: [
+                            { text: "No tenemos ningún material de presentación (ni digital ni físico).", score: 1 },
+                            { text: "Tenemos una presentación básica o un borrador de brochure hecho por nosotros.", score: 2 },
+                            { text: "Contamos con material de presentación profesional (brochure, catálogo, web, etc.) listo para mostrar a clientes.", score: 3 }
+                        ]
+                    },
+                    {
+                        q: "¿Tienes una estrategia definida para llegar a tus primeros clientes?",
+                        options: [
+                            { text: "Esperamos que los clientes lleguen a nosotros por el 'boca a boca' o por suerte.", score: 1 },
+                            { text: "Hemos probado algunas acciones aisladas (ej: ir a un evento, publicar en redes sociales) sin un plan claro ni medición.", score: 2 },
+                            { text: "Tenemos un plan claro para buscar clientes, combinando estrategias (ej: marketing digital, ventas directas, ferias) y midiendo los resultados.", score: 3 }
+                        ]
+                    }
+                ]
+            },
+            {
+                area: "Estrategia y Escalabilidad",
+                items: [
+                    {
+                        q: "¿Cuál es tu visión y plan de crecimiento a largo plazo?",
+                        options: [
+                            { text: "Nuestro único foco es sobrevivir el próximo mes. No hemos pensado más allá.", score: 1 },
+                            { text: "Tenemos algunas ideas sobre cómo podríamos crecer, pero no hay un plan concreto.", score: 2 },
+                            { text: "Tenemos una visión clara a 3-5 años y una hoja de ruta estratégica con hitos clave.", score: 3 }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        const actionPlans = {
+            "Propuesta de Valor y Producto/Servicio": {
+                low: {
+                    title: "Redefinir y Validar la Propuesta de Valor",
+                    steps: [
+                        "**Acción Inmediata:** Detén el desarrollo. Tu prioridad es la validación.",
+                        "**Entrevistas con Clientes:** Habla con al menos 20-30 personas de tu público objetivo. No intentes vender, busca entender sus problemas y frustraciones.",
+                        "**Lean Canvas:** Utiliza la herramienta Lean Canvas para mapear y aclarar tu modelo de negocio en una sola página. Enfócate en el cuadrante 'Problema' y 'Segmento de Clientes'.",
+                        "**Construye un MVP (Producto Mínimo Viable):** Crea la versión más simple posible de tu producto que resuelva el problema principal para un grupo pequeño de usuarios."
+                    ]
+                },
+                medium: {
+                    title: "Fortalecer y Diferenciar la Solución",
+                    steps: [
+                        "**Análisis Competitivo:** Realiza un análisis exhaustivo de tus 2-3 competidores principales. ¿Qué hacen bien? ¿Dónde están sus debilidades?",
+                        "**Identifica tu 'Salsa Secreta':** ¿Qué te hace único? ¿Es tu tecnología, tu servicio al cliente, tu diseño, tu comunidad? Potencia ese diferenciador.",
+                        "**Recopila Testimonios:** Pide a tus clientes actuales que te den testimonios detallados. Úsalos para refinar tu mensaje de marketing.",
+                        "**Hoja de Ruta del Producto:** Crea un plan de desarrollo para los próximos 6-12 meses basado en el feedback de los clientes y tus objetivos estratégicos."
+                    ]
+                },
+                high: {
+                    title: "Capitalizar y Expandir la Propuesta de Valor",
+                    steps: [
+                        "**Crea un 'Foso' Competitivo:** Invierte en tu ventaja competitiva para hacerla más difícil de copiar. Esto puede ser a través de patentes, construcción de marca o creando efectos de red.",
+                        "**Explora Extensiones de Producto:** ¿Qué otros problemas relacionados tienen tus clientes que podrías resolver?",
+                        "**Liderazgo de Opinión:** Posiciónate como un experto en tu industria a través de blogs, webinars o informes. Esto fortalece tu marca y tu propuesta de valor."
+                    ]
+                }
+            },
+            "Solución y Validación": {
+                low: {
+                    title: "Definir, Prototipar y Validar la Solución",
+                    steps: [
+                        "**Prioriza Características:** Haz una lista de todas las posibles características y clasifícalas en 'indispensables' y 'deseables'. Enfócate solo en las indispensables.",
+                        "**Crea un Prototipo Simple:** Usa papel, Powerpoint o herramientas como Figma para crear una maqueta visual de tu solución. No necesitas programar.",
+                        "**Valida con Clientes:** Muestra tu prototipo a clientes potenciales y pregunta: '¿Esto resuelve tu problema? ¿Pagarías X por esto?'. La pregunta del precio es clave.",
+                        "**Busca el Compromiso:** El objetivo final es conseguir una pre-venta, un piloto pagado o una carta de intención. Es la única validación real."
+                    ]
+                },
+                medium: {
+                    title: "Convertir Interés en Compromiso Real",
+                    steps: [
+                        "**Crea una Oferta de Pre-venta:** Ofrece un descuento o beneficio exclusivo a quienes paguen por tu solución antes de que esté lista. Esto crea urgencia y valida la demanda.",
+                        "**Test de Usabilidad:** Muestra tu prototipo a 5-10 clientes y pídeles que completen una tarea. Observa dónde se confunden para mejorar el diseño.",
+                        "**No te fíes del 'sí, lo compraría':** Las palabras son baratas. Pide un compromiso tangible. Si dicen que pagarían, preséntales una orden de compra o un link de pago.",
+                        "**Itera sobre el Feedback:** Ajusta tu prototipo y tu oferta basándote en lo que aprendiste. Repite el proceso hasta conseguir ventas reales."
+                    ]
+                },
+                high: {
+                    title: "Optimizar y Preparar para el Desarrollo",
+                    steps: [
+                        "**Analiza a tus Primeros Clientes:** ¿Qué tienen en común los que sí pagaron? Usa esa información para refinar tu perfil de 'cliente ideal'.",
+                        "**Define el 'Producto Mínimo Viable' (MVP):** Con la validación de pago, ahora puedes seleccionar con confianza el conjunto más pequeño de características para construir.",
+                        "**Crea un 'Product Backlog':** Transforma tus características validadas en 'historias de usuario' detalladas. Este será el plan de trabajo para el desarrollo.",
+                        "**Establece Métricas de Éxito por Característica:** ¿Cómo sabrás si una característica es utilizada y valorada? Define cómo medirlo (ej: % de usuarios que la usan, tiempo en la función)."
+                    ]
+                }
+            },
+            "Mercado y Cliente": {
+                low: {
+                    title: "Descubrir y Entender a tu Cliente",
+                    steps: [
+                        "**'Sal del Edificio':** Tu misión es encontrar a tus clientes. Asiste a eventos de la industria, participa en foros online, ve a donde ellos están.",
+                        "**Crea 'Proto-Personas':** Basado en tus hipótesis, crea perfiles de cliente ficticios. Luego, sal a validarlos o refutarlos con personas reales.",
+                        "**Encuestas de Validación:** Utiliza herramientas como Google Forms o SurveyMonkey para validar a mayor escala el problema que intentas resolver.",
+                        "**No construyas nada más:** Hasta que no tengas evidencia clara de que hay un grupo de personas con un problema real, no escribas ni una línea más de código."
+                    ]
+                },
+                medium: {
+                    title: "Profundizar la Relación y Segmentar",
+                    steps: [
+                        "**Mapa de Empatía:** Para tus 'Buyer Personas', crea un Mapa de Empatía. ¿Qué piensan, sienten, ven y oyen? Esto te dará insights valiosos.",
+                        "**Segmentación:** ¿Puedes agrupar a tus clientes actuales en segmentos con necesidades o comportamientos similares? Esto te permitirá personalizar tu marketing y producto.",
+                        "**Canales de Feedback:** Establece canales formales para recibir feedback constante: encuestas de satisfacción, un email dedicado, etc.",
+                        "**Mide la Activación:** ¿Qué acciones clave debe realizar un nuevo usuario para obtener valor de tu producto? Mide y optimiza este proceso."
+                    ]
+                },
+                high: {
+                    title: "Liderar y Expandir tu Nicho de Mercado",
+                    steps: [
+                        "**Estudio de 'Jobs-to-be-Done':** Investiga no solo 'quién' es tu cliente, sino 'para qué trabajo' contratan tu producto. Esto puede revelar nuevos casos de uso y mercados.",
+                        "**Programa de Referidos:** Implementa un programa que incentive a tus clientes felices a recomendar tu producto. Es la forma más barata y efectiva de crecer.",
+                        "**Exploración de Mercados Adyacentes:** ¿Hay otros segmentos de clientes o geografías que podrían beneficiarse de tu solución?"
+                    ]
+                }
+            },
+            "Modelo de Negocio y Operaciones": {
+                low: {
+                    title: "Definir y Sistematizar el Negocio",
+                    steps: [
+                        "**Mapeo de Procesos:** Dibuja en un papel el flujo completo de tu operación, desde que un cliente te conoce hasta que le entregas el valor. Identifica los cuellos de botella.",
+                        "**Automatiza una Tarea:** Elige la tarea más repetitiva y manual que haces y busca una herramienta para automatizarla (ej. Zapier, Make, o un simple script).",
+                        "**Define tu Modelo de Ingresos:** Investiga diferentes modelos (suscripción, transacción, freemium, etc.) y elige uno para probar. Sé específico.",
+                        "**Calcula tu 'Back-of-the-envelope' P&L:** Haz un cálculo rápido de tus ingresos y costos estimados para ver si el modelo tiene sentido a grandes rasgos."
+                    ]
+                },
+                medium: {
+                    title: "Optimizar y Escalar Operaciones",
+                    steps: [
+                        "**Manual de Operaciones:** Documenta tus procesos clave. Esto es esencial para delegar y contratar en el futuro.",
+                        "**Adopta un CRM:** Empieza a usar un sistema de gestión de relaciones con clientes (como HubSpot, Zoho o Airtable) para centralizar la información.",
+                        "**Revisa tus Precios:** ¿Estás cobrando lo suficiente? Analiza el valor que entregas y lo que cobra la competencia. Considera hacer una prueba de precios con nuevos clientes.",
+                        "**Identifica tus KPIs Operativos:** Define 3-5 métricas clave para medir la eficiencia de tus operaciones (ej. tiempo de entrega, costo por servicio, etc.)."
+                    ]
+                },
+                high: {
+                    title: "Innovar en el Modelo y Lograr Eficiencia de Élite",
+                    steps: [
+                        "**Diversificación de Ingresos:** Explora fuentes de ingresos adicionales que complementen tu oferta principal.",
+                        "**Integraciones y API:** Abre tu plataforma a través de una API para que otros puedan construir sobre ella, creando un ecosistema.",
+                        "**Optimización de la Cadena de Valor:** Analiza toda tu cadena de valor, desde proveedores hasta la entrega final, y busca oportunidades de mejora y ahorro."
+                    ]
+                }
+            },
+            "Finanzas y Financiamiento": {
+                low: {
+                    title: "Establecer Control y Planificación Financiera Básica",
+                    steps: [
+                        "**Acción Inmediata: Detalla tus costos.** Usa una planilla para listar todos los gastos posibles que necesitarás para empezar y operar por 3 meses.",
+                        "**Define un Plan de Financiamiento Realista:** Si dependes de fondos externos, ¿qué harás si no los ganas? Crea un 'Plan B' con recursos propios, aunque sea más pequeño o lento.",
+                        "**Establece UNA Métrica Clave:** Elige un solo indicador de éxito para empezar (ej: 'número de usuarios registrados' o 'primera venta'). Enfócate solo en eso.",
+                        "**Separa tus Finanzas:** Abre una cuenta bancaria exclusiva para el negocio. Es un paso crucial para la formalidad."
+                    ]
+                },
+                medium: {
+                    title: "Desarrollar una Estrategia Financiera Sostenible",
+                    steps: [
+                        "**Crea un Presupuesto Formal:** Transforma tu lista de costos en un presupuesto mensual para los próximos 6-12 meses. Asigna responsables a cada gasto.",
+                        "**Define tu Estrategia de 'Bootstrapping':** Si usarás fondos propios, define hasta cuándo y qué hitos debes alcanzar antes de buscar capital externo.",
+                        "**Define tus KPIs Iniciales:** Selecciona 3-5 KPIs que realmente midan la salud de tu negocio (ej: Costo de Adquisición de Cliente, Ingresos Mensuales Recurrentes, Tasa de Activación).",
+                        "**Prepara un 'Pitch' para Inversionistas:** Aunque no busques fondos ahora, prepara una presentación que explique tu modelo de negocio y necesidades financieras. Te obligará a aclarar tus ideas."
+                    ]
+                },
+                high: {
+                    title: "Optimizar la Gestión Financiera para el Crecimiento",
+                    steps: [
+                        "**Crea Proyecciones Financieras a 18-24 meses:** Desarrolla un modelo financiero detallado (Estado de Resultados, Flujo de Caja) que te permita planificar a largo plazo.",
+                        "**Construye un 'Data Room':** Organiza toda tu información financiera, legal y de métricas en un solo lugar. Es indispensable para procesos de 'due diligence' con inversionistas.",
+                        "**Analiza la Rentabilidad por Cohorte:** Agrupa a tus clientes por mes de adquisición y analiza su comportamiento y rentabilidad en el tiempo. Esto te dará insights muy valiosos.",
+                        "**Define tu 'North Star Metric':** Elige una única métrica que capture el valor principal que entregas a tus clientes. Todo el equipo debe enfocarse en mejorarla."
+                    ]
+                }
+            },
+            "Equipo Fundador": {
+                low: {
+                    title: "Fortalecer o Completar el Equipo Fundador",
+                    steps: [
+                        "**Autoevaluación de Habilidades:** Haz una lista honesta de tus fortalezas y debilidades. ¿Qué habilidad crítica le falta al negocio (tecnología, ventas, operaciones)?",
+                        "**Networking Activo:** Busca un co-fundador como si tu vida dependiera de ello. Asiste a meetups, hackathons y eventos de la industria.",
+                        "**Acuerdo de Fundadores:** Antes de asociarte con alguien, discute y documenta temas clave: roles, responsabilidades, participación accionaria, vesting, y qué pasa si alguien se va.",
+                        "**Busca Mentores:** Encuentra 1-2 personas con experiencia que puedan aconsejarte y cubrir temporalmente tus brechas de conocimiento."
+                    ]
+                },
+                medium: {
+                    title: "Alinear y Formalizar el Equipo",
+                    steps: [
+                        "**Establece un 'Vesting Schedule':** Si aún no lo tienes, implementa un plan de vesting para todos los fundadores. Es el estándar de la industria y protege a todos.",
+                        "**Define Roles y Responsabilidades Claras:** Crea un documento que especifique quién es el responsable final de cada área del negocio (CEO, CTO, COO, etc.).",
+                        "**Cultura de Comunicación:** Establece un ritmo de reuniones semanales para sincronizar al equipo, tomar decisiones y mantener a todos alineados.",
+                        "**Plan de Contratación:** Identifica cuál será la primera contratación clave que necesitarás hacer cuando tengas los recursos."
+                    ]
+                },
+                high: {
+                    title: "Escalar el Liderazgo y la Cultura",
+                    steps: [
+                        "**Define tus Valores Culturales:** ¿Qué principios guiarán la forma en que trabajan y toman decisiones a medida que crecen? Escríbelos.",
+                        "**Desarrollo de Liderazgo:** Como fundador, tu rol cambiará de 'hacer' a 'gestionar' y 'liderar'. Invierte en tu propio desarrollo (libros, cursos, coaching).",
+                        "**Crea un 'Advisory Board':** Reúne a un grupo de 3-5 expertos de la industria para que te asesoren formalmente a cambio de una pequeña participación accionaria."
+                    ]
+                }
+            },
+            "Marketing y Ventas": {
+                low: {
+                    title: "Construir las Herramientas y el Plan de Adquisición",
+                    steps: [
+                        "**Elige UN Canal para Empezar:** No intentes estar en todos lados. Basado en dónde está tu cliente, elige un solo canal (ej: Ventas directas en ferias, LinkedIn, Anuncios en Instagram) y enfócate en él.",
+                        "**Crea tu 'Elevator Pitch':** Desarrolla una explicación de 20 segundos de lo que haces, para quién y por qué es importante. Practícala.",
+                        "**Diseña un Brochure o Landing Page Simple:** Crea una pieza de material (digital o físico) que explique tu propuesta de valor y tenga un llamado a la acción claro (ej: 'Pide una cotización', 'Regístrate').",
+                        "**Sal a Vender 'Artesanalmente':** Realiza las primeras ventas tú mismo. Llama por teléfono, visita potenciales clientes, envía emails personalizados. Aprende de cada interacción."
+                    ]
+                },
+                medium: {
+                    title: "Sistematizar y Medir el Proceso de Ventas",
+                    steps: [
+                        "**Dibuja el 'Camino del Cliente':** Mapea los pasos que da una persona desde que no te conoce hasta que se convierte en un cliente fiel, considerando puntos de contacto online y offline.",
+                        "**Implementa un Sistema de Seguimiento:** Usa un CRM simple o una planilla para registrar cada interacción con un potencial cliente. ¿Quién es? ¿Cuándo hablaste con él? ¿Qué le interesa?",
+                        "**Prueba y Error Sistemático:** Dedica un pequeño presupuesto a experimentar con 2-3 canales (online u offline). Mide el costo por lead y por cliente de cada uno.",
+                        "**Prepara tu Material de Ventas:** Profesionaliza tu brochure, presentación o página web. Asegúrate de que comunique claramente los beneficios."
+                    ]
+                },
+                high: {
+                    title: "Escalar la Máquina de Crecimiento",
+                    steps: [
+                        "**Contrata a tu Primer Vendedor o Marketer:** Busca a alguien que pueda tomar el sistema que has construido y ejecutarlo a mayor escala.",
+                        "**Automatización de Marketing:** Utiliza herramientas para automatizar secuencias de emails, publicaciones en redes sociales y nutrición de leads.",
+                        "**Optimización de la Conversión (CRO):** Realiza pruebas A/B en tu landing page, emails y anuncios para mejorar continuamente tus tasas de conversión."
+                    ]
+                }
+            },
+            "Estrategia y Escalabilidad": {
+                low: {
+                    title: "Definir la Dirección y la Visión",
+                    steps: [
+                        "**Establece Metas a 90 Días:** Olvida los 5 años. ¿Cuál es el objetivo más importante que debes lograr en el próximo trimestre? (ej. 'Conseguir 10 clientes de pago').",
+                        "**Escribe tu Declaración de Misión:** ¿Por qué existe tu empresa más allá de ganar dinero? Esto guiará tus decisiones.",
+                        "**Análisis FODA:** Realiza un análisis simple de tus Fortalezas, Oportunidades, Debilidades y Amenazas. Te dará una visión clara de tu situación actual.",
+                        "**Habla con Emprendedores más Avanzados:** Busca consejo de quienes ya han pasado por tu etapa. Sus perspectivas son invaluables."
+                    ]
+                },
+                medium: {
+                    title: "Construir una Hoja de Ruta Estratégica",
+                    steps: [
+                        "**Crea un 'Roadmap' a 18 meses:** Define los hitos clave de producto, marketing y finanzas que quieres alcanzar en el próximo año y medio.",
+                        "**Define tus 'North Star Metric':** Elige una única métrica que capture el valor principal que entregas a tus clientes (ej. para Airbnb, 'noches reservadas'). Todo el equipo debe enfocarse en mejorarla.",
+                        "**Planificación de Escenarios:** ¿Qué harías si tus ventas se duplican mañana? ¿Y si se reducen a la mitad? Piensa en planes de contingencia básicos.",
+                        "**Revisa tu Estrategia Trimestralmente:** El mercado cambia rápido. Dedica un día cada tres meses a revisar tu plan y ajustarlo si es necesario."
+                    ]
+                },
+                high: {
+                    title: "Prepararse para la Expansión Estratégica",
+                    steps: [
+                        "**Investiga Mercados Adyacentes:** Analiza oportunidades de expansión a nuevas geografías, segmentos de clientes o industrias.",
+                        "**Construye Alianzas Estratégicas:** Identifica empresas que no compiten contigo pero que sirven al mismo cliente. Busca formas de colaborar.",
+                        "**Piensa en tu 'Jugada Final':** ¿Cuál es el objetivo a largo plazo? ¿Ser adquiridos, salir a bolsa, seguir siendo una empresa privada rentable? Tu estrategia cambiará dependiendo de la respuesta."
+                    ]
+                }
+            }
+        };
+
+        let currentResults = {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const questionsContainer = document.getElementById('questions-container');
+            let questionCounter = 1; // Start with 1 for contact section
+
+            questions.forEach((section, sectionIndex) => {
+                questionCounter++;
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'question-card bg-white p-6 rounded-xl shadow-md border border-gray-200';
+                
+                const sectionTitle = document.createElement('h2');
+                sectionTitle.className = 'text-xl font-bold mb-6 text-indigo-700';
+                sectionTitle.textContent = `Área ${sectionIndex + 2}: ${section.area}`;
+                sectionDiv.appendChild(sectionTitle);
+
+                section.items.forEach((item) => {
+                    questionCounter++;
+                    const questionWrapper = document.createElement('div');
+                    questionWrapper.className = 'mb-6';
+                    
+                    const questionText = document.createElement('p');
+                    questionText.className = 'font-semibold text-gray-800 mb-3';
+                    questionText.textContent = `${questionCounter}. ${item.q}`;
+                    questionWrapper.appendChild(questionText);
+
+                    const optionsWrapper = document.createElement('div');
+                    optionsWrapper.className = 'space-y-3';
+                    
+                    item.options.forEach((option, optionIndex) => {
+                        const optionId = `q${questionCounter}_o${optionIndex}`;
+                        
+                        const radioInput = document.createElement('input');
+                        radioInput.type = 'radio';
+                        radioInput.id = optionId;
+                        radioInput.name = `question_${questionCounter}`;
+                        radioInput.value = option.score;
+                        radioInput.className = 'sr-only'; // Screen reader only
+                        radioInput.required = true;
+
+                        const label = document.createElement('label');
+                        label.htmlFor = optionId;
+                        label.className = 'option-label';
+                        label.textContent = option.text;
+
+                        optionsWrapper.appendChild(radioInput);
+                        optionsWrapper.appendChild(label);
+                    });
+
+                    questionWrapper.appendChild(optionsWrapper);
+                    sectionDiv.appendChild(questionWrapper);
+                });
+                questionsContainer.appendChild(sectionDiv);
+            });
+
+            const form = document.getElementById('diagnostic-form');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                calculateAndShowResults();
+            });
+
+            document.getElementById('print-button').addEventListener('click', () => window.print());
+            
+            document.getElementById('restart-button').addEventListener('click', () => {
+                document.getElementById('results-section').classList.add('hidden');
+                document.getElementById('welcome-section').classList.remove('hidden');
+                document.getElementById('diagnostic-form').classList.remove('hidden');
+                form.reset();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            document.getElementById('email-button').addEventListener('click', sendEmailToAdvisor);
+        });
+
+        function calculateAndShowResults() {
+            const scores = {};
+            let totalScore = 0;
+            let questionCounter = 1; // Start with 1 for contact section
+            let allAnswered = true;
+            
+            const contactInfo = {
+                projectName: document.getElementById('projectName').value,
+                entrepreneurName: document.getElementById('entrepreneurName').value,
+                entrepreneurEmail: document.getElementById('entrepreneurEmail').value
+            };
+
+            questions.forEach(section => {
+                let areaScore = 0;
+                let areaMaxScore = 0;
+                questionCounter++;
+                section.items.forEach(item => {
+                    questionCounter++;
+                    const selectedOption = document.querySelector(`input[name="question_${questionCounter}"]:checked`);
+                    if (selectedOption) {
+                        areaScore += parseInt(selectedOption.value);
+                    } else {
+                        allAnswered = false;
+                    }
+                    const maxOptionScore = Math.max(...item.options.map(opt => opt.score));
+                    areaMaxScore += maxOptionScore;
+                });
+                scores[section.area] = {
+                    score: areaScore,
+                    maxScore: areaMaxScore
+                };
+                totalScore += areaScore;
+            });
+
+            if (!allAnswered) {
+                alert('Por favor, responde todas las preguntas para continuar.');
+                return;
+            }
+            
+            const totalMaxScore = Object.values(scores).reduce((sum, data) => sum + data.maxScore, 0);
+
+            currentResults = {
+                contactInfo,
+                scores,
+                totalScore,
+                totalMaxScore
+            };
+
+            displayResults(currentResults);
+        }
+
+        function displayResults(results) {
+            const { contactInfo, scores, totalScore, totalMaxScore } = results;
+            
+            // Hide form, show results
+            document.getElementById('diagnostic-form').classList.add('hidden');
+            document.getElementById('welcome-section').classList.add('hidden');
+            document.getElementById('results-section').classList.remove('hidden');
+
+            // Contact info in results
+            const resultsContactInfoEl = document.getElementById('results-contact-info');
+            resultsContactInfoEl.innerHTML = `
+                <p><strong>Proyecto:</strong> ${contactInfo.projectName}</p>
+                <p><strong>Emprendedor/a:</strong> ${contactInfo.entrepreneurName}</p>
+            `;
+
+            // Overall Diagnosis
+            const overallDiagnosisEl = document.getElementById('overall-diagnosis');
+            let diagnosisText = '';
+            let diagnosisClass = '';
+            const overallPercentage = (totalScore / totalMaxScore) * 100;
+
+            if (overallPercentage <= 45) {
+                diagnosisText = '🔴 Etapa Crítica / Idea';
+                diagnosisClass = 'bg-red-100 text-red-800';
+            } else if (overallPercentage <= 75) {
+                diagnosisText = '🟡 Etapa de Mejora / Crecimiento Temprano';
+                diagnosisClass = 'bg-yellow-100 text-yellow-800';
+            } else {
+                diagnosisText = '🟢 Etapa Sólida / Expansión';
+                diagnosisClass = 'bg-green-100 text-green-800';
+            }
+            overallDiagnosisEl.innerHTML = `<h3 class="text-xl font-bold">${diagnosisText}</h3><p class="mt-1">Puntuación Total: <strong>${totalScore} / ${totalMaxScore}</strong></p>`;
+            overallDiagnosisEl.className = `text-center mb-8 p-4 rounded-lg ${diagnosisClass}`;
+
+            // Score Summary
+            const scoreSummaryEl = document.getElementById('score-summary');
+            scoreSummaryEl.innerHTML = '';
+            Object.entries(scores).forEach(([area, data]) => {
+                const percentage = (data.score / data.maxScore) * 100;
+                let bgColor = '';
+                if (percentage <= 50) bgColor = 'bg-red-100';
+                else if (percentage <= 80) bgColor = 'bg-yellow-100';
+                else bgColor = 'bg-green-100';
+
+                scoreSummaryEl.innerHTML += `
+                    <div class="p-4 rounded-lg ${bgColor}">
+                        <p class="font-semibold text-gray-800">${area}</p>
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm text-gray-600">Puntuación: ${data.score} / ${data.maxScore}</p>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 ml-4">
+                                <div class="h-2.5 rounded-full" style="width: ${percentage}%; background-color: ${getBarColor(percentage)};"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Action Plan
+            const actionPlanEl = document.getElementById('action-plan');
+            actionPlanEl.innerHTML = '';
+            
+            const sortedAreas = Object.entries(scores).sort(([,a], [,b]) => (a.score/a.maxScore) - (b.score/b.maxScore));
+
+            sortedAreas.forEach(([area, data]) => {
+                const percentage = (data.score / data.maxScore) * 100;
+                let plan;
+                let statusClass, statusText;
+
+                if (percentage <= 50) {
+                    plan = actionPlans[area].low;
+                    statusClass = 'bg-red-500';
+                    statusText = 'Atención Prioritaria';
+                } else if (percentage <= 80) {
+                    plan = actionPlans[area].medium;
+                    statusClass = 'bg-yellow-500';
+                    statusText = 'Área de Mejora';
+                } else {
+                    plan = actionPlans[area].high;
+                    statusClass = 'bg-green-500';
+                    statusText = 'Fortaleza a Capitalizar';
+                }
+
+                const planHtml = `
+                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="text-lg font-bold text-gray-900">${area}</h4>
+                                <p class="font-semibold text-gray-700">${plan.title}</p>
+                            </div>
+                            <span class="text-xs font-bold text-white ${statusClass} px-3 py-1 rounded-full">${statusText}</span>
+                        </div>
+                        <ul class="list-disc list-inside space-y-2 text-gray-600">
+                            ${plan.steps.map(step => `<li>${step.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+                actionPlanEl.innerHTML += planHtml;
+            });
+            
+            // Scroll to results
+            window.scrollTo({ top: document.getElementById('results-section').offsetTop - 20, behavior: 'smooth' });
+        }
+
+        function getBarColor(percentage) {
+            if (percentage <= 50) return '#ef4444'; // red-500
+            if (percentage <= 80) return '#f59e0b'; // amber-500
+            return '#22c55e'; // green-500
+        }
+
+        function sendEmailToAdvisor() {
+            const advisorEmail = document.getElementById('advisor-select').value;
+            if (!advisorEmail) {
+                alert('Por favor, selecciona un asesor para enviar el correo.');
+                return;
+            }
+
+            const { contactInfo, scores, totalScore, totalMaxScore } = currentResults;
+            const subject = `Diagnóstico del Proyecto: ${contactInfo.projectName}`;
+
+            let body = `Hola,\n\n`;
+            body += `El emprendedor ${contactInfo.entrepreneurName} (${contactInfo.entrepreneurEmail}) ha completado el diagnóstico para su proyecto "${contactInfo.projectName}".\n\n`;
+            body += `========================================\n`;
+            body += `RESUMEN DEL DIAGNÓSTICO\n`;
+            body += `========================================\n\n`;
+            body += `Puntuación Total: ${totalScore} / ${totalMaxScore}\n\n`;
+            
+            body += `--- Puntuación por Área ---\n`;
+            Object.entries(scores).forEach(([area, data]) => {
+                body += `${area}: ${data.score} / ${data.maxScore}\n`;
+            });
+            body += `\n`;
+
+            body += `========================================\n`;
+            body += `PLAN DE ACCIÓN RECOMENDADO\n`;
+            body += `========================================\n\n`;
+
+            const sortedAreas = Object.entries(scores).sort(([,a], [,b]) => (a.score/a.maxScore) - (b.score/b.maxScore));
+            sortedAreas.forEach(([area, data]) => {
+                const percentage = (data.score / data.maxScore) * 100;
+                let plan;
+                let statusText;
+
+                if (percentage <= 50) {
+                    plan = actionPlans[area].low;
+                    statusText = 'Atención Prioritaria';
+                } else if (percentage <= 80) {
+                    plan = actionPlans[area].medium;
+                    statusText = 'Área de Mejora';
+                } else {
+                    plan = actionPlans[area].high;
+                    statusText = 'Fortaleza a Capitalizar';
+                }
+                
+                body += `----------------------------------------\n`;
+                body += `ÁREA: ${area.toUpperCase()} (${statusText})\n`;
+                body += `PLAN: ${plan.title}\n`;
+                body += `----------------------------------------\n`;
+                plan.steps.forEach(step => {
+                    body += `- ${step.replace(/\*\*/g, '')}\n`;
+                });
+                body += `\n`;
+            });
+
+            body += `\nSaludos,\nHerramienta de Diagnóstico La Brújula Incuba.`;
+
+            const mailtoLink = `mailto:${advisorEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoLink;
+        }
+
+    </script>
+</body>
+</html>
