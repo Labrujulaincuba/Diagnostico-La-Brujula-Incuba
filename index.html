@@ -231,6 +231,14 @@
                         ]
                     },
                     {
+                        q: "¿Ya has definido los precios de tu producto o servicio?",
+                        options: [
+                            { text: "No, aún no hemos pensado en los precios ni en una estrategia.", score: 1 },
+                            { text: "Tenemos una idea general de los precios, pero no basada en un análisis formal.", score: 2 },
+                            { text: "Hemos definido una estrategia de precios clara, basada en costos, valor y análisis de la competencia.", score: 3 }
+                        ]
+                    },
+                    {
                         q: "¿Qué tan eficientes y escalables son tus operaciones?",
                         options: [
                             { text: "Aún no hemos diseñado cómo va a operar el proyecto; es una idea sin procesos definidos.", score: 1 },
@@ -409,18 +417,18 @@
                 low: {
                     title: "Definir y Sistematizar el Negocio",
                     steps: [
+                        "**Define tu Estrategia de Precios:** Investiga cuánto cobra la competencia y cuánto valor entregas. Calcula un precio inicial para validarlo con clientes.",
                         "**Mapeo de Procesos:** Dibuja en un papel el flujo completo de tu operación, desde que un cliente te conoce hasta que le entregas el valor. Identifica los cuellos de botella.",
-                        "**Automatiza una Tarea:** Elige la tarea más repetitiva y manual que haces y busca una herramienta para automatizarla (ej. Zapier, Make, o un simple script).",
                         "**Define tu Modelo de Ingresos:** Investiga diferentes modelos (suscripción, transacción, freemium, etc.) y elige uno para probar. Sé específico.",
-                        "**Calcula tu 'Back-of-the-envelope' P&L:** Haz un cálculo rápido de tus ingresos y costos estimados para ver si el modelo tiene sentido a grandes rasgos."
+                        "**Calcula tus Costos y Punto de Equilibrio:** Haz un cálculo rápido de tus ingresos y costos estimados para ver si el modelo tiene sentido a grandes rasgos."
                     ]
                 },
                 medium: {
                     title: "Optimizar y Escalar Operaciones",
                     steps: [
+                        "**Realiza Pruebas de Precios:** Considera ofrecer diferentes paquetes o precios a nuevos clientes para ver qué funciona mejor y maximizar tus ingresos.",
                         "**Manual de Operaciones:** Documenta tus procesos clave. Esto es esencial para delegar y contratar en el futuro.",
                         "**Adopta un CRM:** Empieza a usar un sistema de gestión de relaciones con clientes (como HubSpot, Zoho o Airtable) para centralizar la información.",
-                        "**Revisa tus Precios:** ¿Estás cobrando lo suficiente? Analiza el valor que entregas y lo que cobra la competencia. Considera hacer una prueba de precios con nuevos clientes.",
                         "**Identifica tus KPIs Operativos:** Define 3-5 métricas clave para medir la eficiencia de tus operaciones (ej. tiempo de entrega, costo por servicio, etc.)."
                     ]
                 },
@@ -683,13 +691,11 @@
         }
 
         async function sendDataToSheet(results) {
-            // --- IMPORTANT: Paste your Google Apps Script URL here ---
             const scriptURL = 'https://script.google.com/macros/s/AKfycbyiqLIeqXmG07nGyAV0p6bacIipFeuDFkSQQ1LOkTFL7HTAPp5aPGBqoxSsKE_FMGEbzg/exec';
-            // ---------------------------------------------------------
 
             if (scriptURL === 'PEGAR_AQUÍ_LA_URL_DEL_SCRIPT') {
                 console.warn("La URL del script de Google Sheets no ha sido configurada. Los datos no se guardarán.");
-                return; // Don't proceed if the URL is not set
+                return; 
             }
 
             const payload = {
@@ -708,7 +714,7 @@
                     mode: 'cors',
                     cache: 'no-cache',
                     headers: {
-                        'Content-Type': 'text/plain;charset=utf-8', // Required for Apps Script
+                        'Content-Type': 'text/plain;charset=utf-8', 
                     },
                     body: JSON.stringify(payload)
                 });
