@@ -34,7 +34,13 @@
             border-color: #6366f1;
             box-shadow: 0 0 0 2px #c7d2fe;
         }
+        
+        /* --- Enhanced Print Styles --- */
         @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
             body * {
                 visibility: hidden;
             }
@@ -46,10 +52,29 @@
                 left: 0;
                 top: 0;
                 width: 100%;
+                margin: 0;
+                padding: 0;
+                border: none;
+                box-shadow: none;
             }
             .no-print {
                 display: none;
             }
+            #score-summary {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 1rem !important;
+            }
+            #action-plan > div {
+                page-break-inside: avoid;
+            }
+            .bg-red-100 { background-color: #fee2e2 !important; }
+            .bg-yellow-100 { background-color: #fef3c7 !important; }
+            .bg-green-100 { background-color: #dcfce7 !important; }
+            .bg-red-500 { background-color: #ef4444 !important; }
+            .bg-yellow-500 { background-color: #f59e0b !important; }
+            .bg-green-500 { background-color: #22c55e !important; }
+            .text-white { color: white !important; }
         }
     </style>
 </head>
@@ -108,21 +133,6 @@
                     <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
                         <button id="print-button" class="w-full sm:w-auto bg-gray-700 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-800 transition duration-300">Imprimir / Guardar PDF</button>
                         <button id="restart-button" class="w-full sm:w-auto bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition duration-300">Hacer un nuevo diagnóstico</button>
-                    </div>
-                    
-                    <!-- Email Section -->
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                         <h3 class="text-lg font-semibold text-center text-gray-800 mb-2">Enviar a mi Asesor</h3>
-                         <p class="text-center text-sm text-gray-500 mb-4">Selecciona tu asesor para enviarle una copia de tu diagnóstico por correo.</p>
-                         <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
-                             <select id="advisor-select" class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                 <option value="" disabled selected>Selecciona un ejecutivo...</option>
-                                 <option value="lgodoy@labrujulaincuba.cl">Luis Godoy</option>
-                                 <option value="mbarraza@labrujulaincuba.cl">María José Barraza</option>
-                                 <option value="vcortes@labrujulaincuba.cl">Valentina Cortés</option>
-                             </select>
-                             <button id="email-button" class="w-full sm:w-auto bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700 transition duration-300">Enviar por Correo</button>
-                         </div>
                     </div>
                 </div>
 
@@ -600,8 +610,6 @@
                 form.reset();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
-
-            document.getElementById('email-button').addEventListener('click', sendEmailToAdvisor);
         });
 
         function calculateAndShowResults() {
@@ -762,66 +770,6 @@
             if (percentage <= 50) return '#ef4444'; // red-500
             if (percentage <= 80) return '#f59e0b'; // amber-500
             return '#22c55e'; // green-500
-        }
-
-        function sendEmailToAdvisor() {
-            const advisorEmail = document.getElementById('advisor-select').value;
-            if (!advisorEmail) {
-                alert('Por favor, selecciona un asesor para enviar el correo.');
-                return;
-            }
-
-            const { contactInfo, scores, totalScore, totalMaxScore } = currentResults;
-            const subject = `Diagnóstico del Proyecto: ${contactInfo.projectName}`;
-
-            let body = `Hola,\n\n`;
-            body += `El emprendedor ${contactInfo.entrepreneurName} (${contactInfo.entrepreneurEmail}) ha completado el diagnóstico para su proyecto "${contactInfo.projectName}".\n\n`;
-            body += `========================================\n`;
-            body += `RESUMEN DEL DIAGNÓSTICO\n`;
-            body += `========================================\n\n`;
-            body += `Puntuación Total: ${totalScore} / ${totalMaxScore}\n\n`;
-            
-            body += `--- Puntuación por Área ---\n`;
-            Object.entries(scores).forEach(([area, data]) => {
-                body += `${area}: ${data.score} / ${data.maxScore}\n`;
-            });
-            body += `\n`;
-
-            body += `========================================\n`;
-            body += `PLAN DE ACCIÓN RECOMENDADO\n`;
-            body += `========================================\n\n`;
-
-            const sortedAreas = Object.entries(scores).sort(([,a], [,b]) => (a.score/a.maxScore) - (b.score/b.maxScore));
-            sortedAreas.forEach(([area, data]) => {
-                const percentage = (data.score / data.maxScore) * 100;
-                let plan;
-                let statusText;
-
-                if (percentage <= 50) {
-                    plan = actionPlans[area].low;
-                    statusText = 'Atención Prioritaria';
-                } else if (percentage <= 80) {
-                    plan = actionPlans[area].medium;
-                    statusText = 'Área de Mejora';
-                } else {
-                    plan = actionPlans[area].high;
-                    statusText = 'Fortaleza a Capitalizar';
-                }
-                
-                body += `----------------------------------------\n`;
-                body += `ÁREA: ${area.toUpperCase()} (${statusText})\n`;
-                body += `PLAN: ${plan.title}\n`;
-                body += `----------------------------------------\n`;
-                plan.steps.forEach(step => {
-                    body += `- ${step.replace(/\*\*/g, '')}\n`;
-                });
-                body += `\n`;
-            });
-
-            body += `\nSaludos,\nHerramienta de Diagnóstico La Brújula Incuba.`;
-
-            const mailtoLink = `mailto:${advisorEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            window.location.href = mailtoLink;
         }
 
     </script>
