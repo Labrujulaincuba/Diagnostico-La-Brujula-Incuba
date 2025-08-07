@@ -102,9 +102,17 @@
                         <label for="entrepreneurName" class="block text-sm font-medium text-gray-700 mb-1">Tu Nombre</label>
                         <input type="text" id="entrepreneurName" name="entrepreneurName" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
                     </div>
-                     <div class="md:col-span-2">
+                    <div>
                         <label for="entrepreneurEmail" class="block text-sm font-medium text-gray-700 mb-1">Tu Correo Electrónico</label>
                         <input type="email" id="entrepreneurEmail" name="entrepreneurEmail" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label for="diagnosticType" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Diagnóstico</label>
+                        <select id="diagnosticType" name="diagnosticType" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                            <option value="" disabled selected>Selecciona una opción...</option>
+                            <option value="Inicial">Diagnóstico Inicial (Antes del programa)</option>
+                            <option value="Final">Diagnóstico Final (Después del programa)</option>
+                        </select>
                     </div>
                  </div>
             </div>
@@ -114,7 +122,7 @@
             </div>
 
             <div class="mt-12 text-center">
-                <button type="submit" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition duration-300 transform hover:scale-105">
+                <button type="submit" id="submit-button" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition duration-300 transform hover:scale-105">
                     Generar Diagnóstico y Plan de Acción
                 </button>
             </div>
@@ -613,15 +621,20 @@
         });
 
         function calculateAndShowResults() {
+            const submitButton = document.getElementById('submit-button');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Generando y Guardando...';
+
             const scores = {};
             let totalScore = 0;
-            let questionCounter = 1; // Start with 1 for contact section
+            let questionCounter = 1; 
             let allAnswered = true;
             
             const contactInfo = {
                 projectName: document.getElementById('projectName').value,
                 entrepreneurName: document.getElementById('entrepreneurName').value,
-                entrepreneurEmail: document.getElementById('entrepreneurEmail').value
+                entrepreneurEmail: document.getElementById('entrepreneurEmail').value,
+                diagnosticType: document.getElementById('diagnosticType').value
             };
 
             questions.forEach(section => {
@@ -648,6 +661,8 @@
 
             if (!allAnswered) {
                 alert('Por favor, responde todas las preguntas para continuar.');
+                submitButton.disabled = false;
+                submitButton.textContent = 'Generar Diagnóstico y Plan de Acción';
                 return;
             }
             
@@ -659,26 +674,66 @@
                 totalScore,
                 totalMaxScore
             };
+            
+            sendDataToSheet(currentResults).finally(() => {
+                displayResults(currentResults);
+                submitButton.disabled = false;
+                submitButton.textContent = 'Generar Diagnóstico y Plan de Acción';
+            });
+        }
 
-            displayResults(currentResults);
+        async function sendDataToSheet(results) {
+            // --- IMPORTANT: Paste your Google Apps Script URL here ---
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbyiqLIeqXmG07nGyAV0p6bacIipFeuDFkSQQ1LOkTFL7HTAPp5aPGBqoxSsKE_FMGEbzg/exec';
+            // ---------------------------------------------------------
+
+            if (scriptURL === 'PEGAR_AQUÍ_LA_URL_DEL_SCRIPT') {
+                console.warn("La URL del script de Google Sheets no ha sido configurada. Los datos no se guardarán.");
+                return; // Don't proceed if the URL is not set
+            }
+
+            const payload = {
+                projectName: results.contactInfo.projectName,
+                entrepreneurName: results.contactInfo.entrepreneurName,
+                entrepreneurEmail: results.contactInfo.entrepreneurEmail,
+                diagnosticType: results.contactInfo.diagnosticType,
+                totalScore: results.totalScore,
+                totalMaxScore: results.totalMaxScore,
+                scores: results.scores
+            };
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', // Required for Apps Script
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                console.log('Success:', data);
+            } catch (error) {
+                console.error('Error sending data to Google Sheet:', error);
+                alert("Hubo un error al guardar los datos en la planilla. Por favor, guarda una copia en PDF.");
+            }
         }
 
         function displayResults(results) {
             const { contactInfo, scores, totalScore, totalMaxScore } = results;
             
-            // Hide form, show results
             document.getElementById('diagnostic-form').classList.add('hidden');
             document.getElementById('welcome-section').classList.add('hidden');
             document.getElementById('results-section').classList.remove('hidden');
 
-            // Contact info in results
             const resultsContactInfoEl = document.getElementById('results-contact-info');
             resultsContactInfoEl.innerHTML = `
                 <p><strong>Proyecto:</strong> ${contactInfo.projectName}</p>
                 <p><strong>Emprendedor/a:</strong> ${contactInfo.entrepreneurName}</p>
+                <p><strong>Tipo:</strong> Diagnóstico ${contactInfo.diagnosticType}</p>
             `;
 
-            // Overall Diagnosis
             const overallDiagnosisEl = document.getElementById('overall-diagnosis');
             let diagnosisText = '';
             let diagnosisClass = '';
@@ -697,7 +752,6 @@
             overallDiagnosisEl.innerHTML = `<h3 class="text-xl font-bold">${diagnosisText}</h3><p class="mt-1">Puntuación Total: <strong>${totalScore} / ${totalMaxScore}</strong></p>`;
             overallDiagnosisEl.className = `text-center mb-8 p-4 rounded-lg ${diagnosisClass}`;
 
-            // Score Summary
             const scoreSummaryEl = document.getElementById('score-summary');
             scoreSummaryEl.innerHTML = '';
             Object.entries(scores).forEach(([area, data]) => {
@@ -720,7 +774,6 @@
                 `;
             });
 
-            // Action Plan
             const actionPlanEl = document.getElementById('action-plan');
             actionPlanEl.innerHTML = '';
             
@@ -762,7 +815,6 @@
                 actionPlanEl.innerHTML += planHtml;
             });
             
-            // Scroll to results
             window.scrollTo({ top: document.getElementById('results-section').offsetTop - 20, behavior: 'smooth' });
         }
 
