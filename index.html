@@ -560,10 +560,9 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const questionsContainer = document.getElementById('questions-container');
-            let questionCounter = 1; // Start with 1 for contact section
+            let questionCounter = 1;
 
             questions.forEach((section, sectionIndex) => {
-                questionCounter++;
                 const sectionDiv = document.createElement('div');
                 sectionDiv.className = 'question-card bg-white p-6 rounded-xl shadow-md border border-gray-200';
                 
@@ -573,25 +572,24 @@
                 sectionDiv.appendChild(sectionTitle);
 
                 section.items.forEach((item) => {
-                    questionCounter++;
                     const questionWrapper = document.createElement('div');
                     questionWrapper.className = 'mb-6';
                     
                     const questionText = document.createElement('p');
                     questionText.className = 'font-semibold text-gray-800 mb-3';
-                    questionText.textContent = `${questionCounter}. ${item.q}`;
+                    questionText.textContent = `${questionCounter + 1}. ${item.q}`;
                     questionWrapper.appendChild(questionText);
 
                     const optionsWrapper = document.createElement('div');
                     optionsWrapper.className = 'space-y-3';
                     
                     item.options.forEach((option, optionIndex) => {
-                        const optionId = `q${questionCounter}_o${optionIndex}`;
+                        const optionId = `q${questionCounter + 1}_o${optionIndex}`;
                         
                         const radioInput = document.createElement('input');
                         radioInput.type = 'radio';
                         radioInput.id = optionId;
-                        radioInput.name = `question_${questionCounter}`;
+                        radioInput.name = `question_${questionCounter + 1}`;
                         radioInput.value = option.score;
                         radioInput.className = 'sr-only'; // Screen reader only
                         radioInput.required = true;
@@ -607,6 +605,7 @@
 
                     questionWrapper.appendChild(optionsWrapper);
                     sectionDiv.appendChild(questionWrapper);
+                    questionCounter++;
                 });
                 questionsContainer.appendChild(sectionDiv);
             });
@@ -648,7 +647,6 @@
             questions.forEach(section => {
                 let areaScore = 0;
                 let areaMaxScore = 0;
-                questionCounter++;
                 section.items.forEach(item => {
                     questionCounter++;
                     const selectedOption = document.querySelector(`input[name="question_${questionCounter}"]:checked`);
